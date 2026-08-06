@@ -5,4 +5,7 @@
         <setting name="mapUnderscoreToCamelCase" value="true"/>
         <setting name="cacheEnabled" value="true"/>
     </settings>
+    <mappers>
+<!--        <mapper resource="/" />-->
+    </mappers>
 </configuration>
