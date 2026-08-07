@@ -45,10 +45,10 @@
         </el-form-item>
       </el-form>
 
-      <!-- 家具列表展示（调用 /api/getAll） -->
+      <!-- 上面的表格：家具列表（调用 /api/getAll，全量） -->
       <el-divider/>
-      <div class="section-title">家具列表（共 {{ furnTotal }} 条）</div>
-      <el-table :data="furnList" style="width: 100%" v-loading="furnLoading" stripe>
+      <div class="section-title">家具列表 - 全量（共 {{ allFurnList.length }} 条）</div>
+      <el-table :data="allFurnList" style="width: 100%" v-loading="allFurnLoading" stripe>
         <el-table-column prop="id" label="ID" width="80"/>
         <el-table-column prop="name" label="名称"/>
         <el-table-column prop="marker" label="品牌"/>
@@ -90,41 +90,28 @@
         </el-form-item>
       </el-form>
 
-      <!-- 数据表格示例 -->
+      <!-- 下面的表格：家具列表（调用 /api/furnPage，分页） -->
       <el-divider/>
-
-      <el-table :data="tableData" style="width: 100%" v-loading="loading">
+      <div class="section-title">家具列表 - 分页（共 {{ furnTotal }} 条）</div>
+      <el-table :data="furnList" style="width: 100%" v-loading="furnLoading" stripe>
         <el-table-column prop="id" label="ID" width="80"/>
-        <el-table-column prop="username" label="用户名"/>
-        <el-table-column prop="email" label="邮箱"/>
-        <el-table-column prop="createTime" label="创建时间"/>
-        <el-table-column label="操作" width="200">
-          <template #default="scope">
-            <el-button size="small" @click="handleEdit(scope.row)">
-              <el-icon>
-                <Edit/>
-              </el-icon>
-              编辑
-            </el-button>
-            <el-button size="small" type="danger" @click="handleDelete(scope.row)">
-              <el-icon>
-                <Delete/>
-              </el-icon>
-              删除
-            </el-button>
-          </template>
-        </el-table-column>
+        <el-table-column prop="name" label="名称"/>
+        <el-table-column prop="marker" label="品牌"/>
+        <el-table-column prop="price" label="价格"/>
+        <el-table-column prop="sales" label="销量"/>
+        <el-table-column prop="stock" label="库存"/>
+        <el-table-column prop="imgPath" label="图片路径"/>
       </el-table>
 
-      <!-- 分页 -->
+      <!-- 家具分页 -->
       <el-pagination
-          v-model:current-page="currentPage"
-          v-model:page-size="pageSize"
-          :page-sizes="[10, 20, 50, 100]"
-          :total="total"
+          v-model:current-page="furnPageNum"
+          v-model:page-size="furnPageSize"
+          :page-sizes="[5, 10, 20, 50]"
+          :total="furnTotal"
           layout="total, sizes, prev, pager, next, jumper"
-          @size-change="handleSizeChange"
-          @current-change="handleCurrentChange"
+          @size-change="handleFurnSizeChange"
+          @current-change="handleFurnPageChange"
           style="margin-top: 20px; justify-content: center"
       />
     </el-card>
@@ -133,16 +120,13 @@
 
 <script setup>
 import {ref, reactive, onMounted} from 'vue'
-import {ElMessage, ElMessageBox} from 'element-plus'
+import {ElMessage} from 'element-plus'
 import {
   Check,
   Refresh,
-  Edit,
-  Delete,
   UploadFilled
 } from '@element-plus/icons-vue'
-import {getUserList, updateUser, deleteUser} from '@/api/example'
-import {addFurn, getAllFurn} from '@/api/furn'
+import {addFurn, getAllFurn, getFurnPage} from '@/api/furn'
 
 // 表单数据（字段与 furnMapper.xml 的 insert 对齐）
 const form = reactive({
@@ -158,24 +142,35 @@ const form = reactive({
 const uploadUrl = ref(import.meta.env.VITE_API_BASE_URL + '/file/upload')
 const fileList = ref([])
 
-// 表格数据
-const tableData = ref([])
-const loading = ref(false)
-const currentPage = ref(1)
-const pageSize = ref(10)
-const total = ref(0)
+// 家具列表 - 全量（/api/getAll）
+const allFurnList = ref([])
+const allFurnLoading = ref(false)
+const fetchAllFurn = async () => {
+  allFurnLoading.value = true
+  try {
+    const res = await getAllFurn()
+    if (res.code === 200) {
+      allFurnList.value = res.data?.list || []
+    }
+  } catch (error) {
+    console.error(error)
+  } finally {
+    allFurnLoading.value = false
+  }
+}
 
-// 家具列表数据（/api/getAll）
+// 家具列表 - 分页（/api/furnPage）
 const furnList = ref([])
 const furnLoading = ref(false)
 const furnTotal = ref(0)
+const furnPageNum = ref(1)
+const furnPageSize = ref(5)
 
-// 获取家具列表
+// 分页获取家具列表
 const fetchFurnList = async () => {
   furnLoading.value = true
   try {
-    const res = await getAllFurn()
-    // res 已经是后端返回的 Msg：{ code, msg, data: { list, total } }
+    const res = await getFurnPage(furnPageNum.value, furnPageSize.value)
     if (res.code === 200) {
       furnList.value = res.data?.list || []
       furnTotal.value = res.data?.total || 0
@@ -187,29 +182,21 @@ const fetchFurnList = async () => {
   }
 }
 
-// 刷新数据
-const refreshData = () => {
-  fetchUserList()
+// 家具分页：切换页码 / 每页条数
+const handleFurnPageChange = (val) => {
+  furnPageNum.value = val
+  fetchFurnList()
+}
+const handleFurnSizeChange = (val) => {
+  furnPageSize.value = val
+  furnPageNum.value = 1 // 改每页条数后回到第一页
+  fetchFurnList()
 }
 
-// 获取用户列表
-const fetchUserList = async () => {
-  loading.value = true
-  try {
-    const res = await getUserList({
-      page: currentPage.value,
-      size: pageSize.value
-    })
-
-    if (res.code === 200) {
-      tableData.value = res.data?.list || []
-      total.value = res.data?.total || 0
-    }
-  } catch (error) {
-    console.error(error)
-  } finally {
-    loading.value = false
-  }
+// 刷新数据（同时刷新全量和分页两个表）
+const refreshData = () => {
+  fetchAllFurn()
+  fetchFurnList()
 }
 
 // 提交表单（新增家具）
@@ -229,7 +216,8 @@ const handleSubmit = async () => {
     if (!res || res.code === 200) {
       ElMessage.success('新增成功')
       handleReset()
-      fetchFurnList() // 新增成功后刷新家具列表
+      fetchAllFurn() // 新增成功后刷新全量表
+      fetchFurnList() // 新增成功后刷新分页表
     }
   } catch (error) {
     console.error(error)
@@ -244,48 +232,6 @@ const handleReset = () => {
   form.sales = 0
   form.stock = 0
   form.imgPath = ''
-}
-
-// 编辑
-const handleEdit = (row) => {
-  ElMessage.info(`编辑用户：${row.username}`)
-  // TODO: 实现编辑功能
-}
-
-// 删除
-const handleDelete = (row) => {
-  ElMessageBox.confirm(
-      `确定要删除用户 ${row.username} 吗？`,
-      '提示',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }
-  ).then(async () => {
-    try {
-      const res = await deleteUser(row.id)
-      if (res.code === 200) {
-        ElMessage.success('删除成功')
-        fetchUserList()
-      }
-    } catch (error) {
-      console.error(error)
-    }
-  }).catch(() => {
-    ElMessage.info('已取消删除')
-  })
-}
-
-// 分页
-const handleSizeChange = (val) => {
-  pageSize.value = val
-  fetchUserList()
-}
-
-const handleCurrentChange = (val) => {
-  currentPage.value = val
-  fetchUserList()
 }
 
 // 文件上传相关
@@ -328,8 +274,8 @@ const handleProgress = (evt, uploadFile, uploadFiles) => {
 
 // 初始化
 onMounted(() => {
-  fetchUserList()
-  fetchFurnList() // 页面加载时拉取家具列表
+  fetchAllFurn() // 全量列表
+  fetchFurnList() // 分页列表
 })
 </script>
 

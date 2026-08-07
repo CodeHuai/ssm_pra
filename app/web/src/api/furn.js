@@ -1,4 +1,5 @@
 import {get, post} from '@/api/index.js'
+import request from '@/utils/request'
 
 /**
  * 家具(furn) 相关接口
@@ -17,4 +18,16 @@ export function addFurn(data) {
 // 返回: { code, msg, data: { list: [...], total: 数量 } }
 export function getAllFurn() {
     return get('/getAll')
+}
+
+// 分页查询家具 —— POST /api/furnPage
+// ⚠️ 后端用 @RequestParam 接收，参数必须放在 url query（params），
+//    不能放进请求体（data），否则后端拿不到会报错。
+// 返回: { code, msg, data: { list, total, pageNum, pageSize, pages } }
+export function getFurnPage(pageNum, pageSize) {
+    return request({
+        url: '/furnPage',
+        method: 'post',
+        params: {pageNum, pageSize}
+    })
 }

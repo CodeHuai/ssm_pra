@@ -10,4 +10,6 @@ public interface FurnMapper {
     void save(FurnBean furnBean);
 
     List<FurnBean> findAllFurns();
+
+    FurnBean updateFurn(FurnBean furnBean);
 }

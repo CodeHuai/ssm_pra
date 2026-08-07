@@ -13,4 +13,8 @@
         select *
         from furn
     </select>
+
+    <update id="updateFurn">
+        update furn set name=${name}
+    </update>
 </mapper>

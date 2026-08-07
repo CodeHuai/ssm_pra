@@ -8,4 +8,6 @@ public interface FurnService {
     public void save(FurnBean furnBean);
 
     public List<FurnBean> getAllFurns();
+
+    public FurnBean updateFurn(FurnBean furnBean);
 }

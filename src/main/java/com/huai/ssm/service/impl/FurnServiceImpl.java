@@ -22,4 +22,9 @@ public class FurnServiceImpl implements FurnService {
     public List<FurnBean> getAllFurns() {
         return furnMapper.findAllFurns();
     }
+
+    @Override
+    public FurnBean updateFurn(FurnBean furnBean) {
+        return furnMapper.updateFurn(furnBean);
+    }
 }

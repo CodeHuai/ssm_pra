@@ -10,7 +10,4 @@
             <property name="helperDialect" value="mysql"/>
         </plugin>
     </plugins>
-    <mappers>
-        <!--        <mapper resource="mapper/furnMapper.xml"/>-->
-    </mappers>
 </configuration>
