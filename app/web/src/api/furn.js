@@ -1,4 +1,4 @@
-import {post} from '@/api/index.js'
+import {get, post} from '@/api/index.js'
 
 /**
  * 家具(furn) 相关接口
@@ -11,4 +11,10 @@ import {post} from '@/api/index.js'
 // 新增家具 —— POST /api/addFurn
 export function addFurn(data) {
     return post('/addFurn', data)
+}
+
+// 查询全部家具 —— GET /api/getAll
+// 返回: { code, msg, data: { list: [...], total: 数量 } }
+export function getAllFurn() {
+    return get('/getAll')
 }

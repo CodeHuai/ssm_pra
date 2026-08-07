@@ -45,6 +45,19 @@
         </el-form-item>
       </el-form>
 
+      <!-- 家具列表展示（调用 /api/getAll） -->
+      <el-divider/>
+      <div class="section-title">家具列表（共 {{ furnTotal }} 条）</div>
+      <el-table :data="furnList" style="width: 100%" v-loading="furnLoading" stripe>
+        <el-table-column prop="id" label="ID" width="80"/>
+        <el-table-column prop="name" label="名称"/>
+        <el-table-column prop="marker" label="品牌"/>
+        <el-table-column prop="price" label="价格"/>
+        <el-table-column prop="sales" label="销量"/>
+        <el-table-column prop="stock" label="库存"/>
+        <el-table-column prop="imgPath" label="图片路径"/>
+      </el-table>
+
       <!-- 文件上传示例 -->
       <el-divider/>
 
@@ -129,7 +142,7 @@ import {
   UploadFilled
 } from '@element-plus/icons-vue'
 import {getUserList, updateUser, deleteUser} from '@/api/example'
-import {addFurn} from '@/api/furn'
+import {addFurn, getAllFurn} from '@/api/furn'
 
 // 表单数据（字段与 furnMapper.xml 的 insert 对齐）
 const form = reactive({
@@ -151,6 +164,28 @@ const loading = ref(false)
 const currentPage = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
+
+// 家具列表数据（/api/getAll）
+const furnList = ref([])
+const furnLoading = ref(false)
+const furnTotal = ref(0)
+
+// 获取家具列表
+const fetchFurnList = async () => {
+  furnLoading.value = true
+  try {
+    const res = await getAllFurn()
+    // res 已经是后端返回的 Msg：{ code, msg, data: { list, total } }
+    if (res.code === 200) {
+      furnList.value = res.data?.list || []
+      furnTotal.value = res.data?.total || 0
+    }
+  } catch (error) {
+    console.error(error)
+  } finally {
+    furnLoading.value = false
+  }
+}
 
 // 刷新数据
 const refreshData = () => {
@@ -194,6 +229,7 @@ const handleSubmit = async () => {
     if (!res || res.code === 200) {
       ElMessage.success('新增成功')
       handleReset()
+      fetchFurnList() // 新增成功后刷新家具列表
     }
   } catch (error) {
     console.error(error)
@@ -293,12 +329,19 @@ const handleProgress = (evt, uploadFile, uploadFiles) => {
 // 初始化
 onMounted(() => {
   fetchUserList()
+  fetchFurnList() // 页面加载时拉取家具列表
 })
 </script>
 
 <style scoped>
 .example-container {
   padding: 20px;
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 12px 0;
 }
 
 .card-header {
