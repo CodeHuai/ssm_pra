@@ -18,6 +18,7 @@ service.interceptors.request.use(config => {
     return config
 }, error => {
     console.error('请求错误：', error)
+    // 统一处理错误，不再抛出
     return Promise.reject(error)
 })
 
@@ -28,7 +29,9 @@ service.interceptors.response.use(response => {
     // 根据后端返回的状态码处理
     if (res.code && res.code !== 200) {
         ElMessage({
-            message: res.message || '请求失败', type: 'error', duration: 5 * 1000
+            message: res.message || '请求失败',
+            type: 'error',
+            duration: 5 * 1000
         })
 
         // 401: 未授权，跳转登录页
@@ -37,6 +40,7 @@ service.interceptors.response.use(response => {
             window.location.href = '/login'
         }
 
+        // 返回失败的 Promise，阻止业务代码继续执行
         return Promise.reject(new Error(res.message || '请求失败'))
     }
 
@@ -72,9 +76,12 @@ service.interceptors.response.use(response => {
     }
 
     ElMessage({
-        message: message, type: 'error', duration: 5 * 1000
+        message: message,
+        type: 'error',
+        duration: 5 * 1000
     })
 
+    // 返回失败的 Promise，阻止业务代码继续执行
     return Promise.reject(error)
 })
 

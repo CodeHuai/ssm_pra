@@ -155,7 +155,6 @@ const fetchUserList = async () => {
       total.value = res.data?.total || 0
     }
   } catch (error) {
-    ElMessage.error('获取用户列表失败')
     console.error(error)
   } finally {
     loading.value = false
