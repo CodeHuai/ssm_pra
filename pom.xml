@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.mrhuai</groupId>
+    <groupId>com.huai</groupId>
     <artifactId>ssm_pra</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>war</packaging>
@@ -36,12 +36,6 @@
             <version>2.3.3</version>
             <scope>provided</scope>
         </dependency>
-        <dependency>
-            <groupId>javax.servlet</groupId>
-            <artifactId>jstl</artifactId>
-            <version>1.2</version>
-        </dependency>
-
         <!-- Log4j + SLF4J -->
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -97,11 +91,11 @@
             <version>1.2.6</version>
         </dependency>
 
-        <!--引入mysql驱动 (8.0.33 适配 MySQL 8.x) -->
+        <!--引入mysql驱动 (5.1.49 适配 MySQL 5.7) -->
         <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
-            <version>8.0.33</version>
+            <version>5.1.49</version>
         </dependency>
 
         <!-- 引入mybatis逆向工程依赖包 -->
