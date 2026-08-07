@@ -1,4 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+  applicationContext.xml —— Spring 父容器(根容器)的"装配图纸"
+  由 web.xml 的 ContextLoaderListener 在启动时加载，负责装配【非 Web 层】：数据源、MyBatis、Service、事务。
+
+  SSM 是父子双容器：
+    - 父容器(本文件)：管 Service / DAO / 数据源 / 事务
+    - 子容器(springmvc.xml)：管 Controller
+    子容器能看见父容器，反之不行，所以本文件刻意排除 Controller(留给子容器)。
+
+  约定：
+    - 每个 <bean> = 让 Spring 造一个对象放进容器；id 是名字、class 是类型、<property> 是注入属性
+    - value = 直接给字面值；ref = 引用容器里另一个 bean(按 id)
+-->
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xmlns:context="http://www.springframework.org/schema/context"
@@ -8,37 +21,54 @@
            http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
            http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd">
 
+    <!-- 1. 加载 jdbc.properties：之后即可用 ${jdbc.xxx} 占位符填值，把"易变配置"和"装配结构"分开 -->
     <context:property-placeholder location="classpath:jdbc.properties"/>
 
+    <!-- 2. 数据源(Druid 连接池)：整个项目的数据源头，MyBatis、事务都依赖它。
+              init-method 在对象创建后立即建 initialSize 个连接(连不上库时会在此让启动失败)；
+              destroy-method 在关闭时释放连接池。 -->
     <bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource" init-method="init" destroy-method="close">
         <property name="driverClassName" value="${jdbc.driver}"/>
         <property name="url" value="${jdbc.url}"/>
         <property name="username" value="${jdbc.username}"/>
         <property name="password" value="${jdbc.password}"/>
-        <property name="initialSize" value="${jdbc.initialSize}"/>
-        <property name="maxActive" value="${jdbc.maxActive}"/>
-        <property name="minIdle" value="${jdbc.minIdle}"/>
+        <property name="initialSize" value="${jdbc.initialSize}"/>   <!-- 初始连接数 -->
+        <property name="maxActive" value="${jdbc.maxActive}"/>       <!-- 最大连接数 -->
+        <property name="minIdle" value="${jdbc.minIdle}"/>           <!-- 最小空闲连接数 -->
     </bean>
 
+    <!-- 3. MyBatis 核心工厂(Spring 整合 MyBatis 的关键)：产出 SqlSessionFactory。
+              ref="dataSource" 引用上面的连接池；configLocation 指 MyBatis 自身配置；
+              mapperLocations 告诉 MyBatis 去 resources/mapper/*.xml 找 SQL。 -->
     <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
         <property name="dataSource" ref="dataSource"/>
         <property name="configLocation" value="classpath:mybatis-config.xml"/>
         <property name="mapperLocations" value="classpath*:mapper/*.xml"/>
     </bean>
 
+    <!-- 4. 自动扫描 DAO 接口：扫描 com.huai.ssm 下所有接口(如 FurnMapper)，为每个接口
+              自动生成代理实现并注册成 bean，这样 Service 里 @Autowired 才能注入 Mapper。
+              sqlSessionFactoryBeanName 用名字(字符串)而非 ref 是官方推荐，规避早期初始化坑。 -->
     <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
-        <property name="basePackage" value="com.huai.ssm.dao"/>
+        <property name="basePackage" value="com.huai.ssm.mapper"/>
         <property name="sqlSessionFactoryBeanName" value="sqlSessionFactory"/>
     </bean>
 
+    <!-- 5. 组件扫描：把标了 @Service / @Component / @Repository 的类注册成 bean。
+              (区别于第 4 步：第 4 步专扫"DAO 接口"，这一步扫"普通组件类")
+              exclude-filter 排除 @Controller / @ControllerAdvice —— 这俩是 Web 层注解，归子容器管。 -->
     <context:component-scan base-package="com.huai.ssm">
         <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
-        <context:exclude-filter type="annotation" expression="org.springframework.web.bind.annotation.ControllerAdvice"/>
+        <context:exclude-filter type="annotation"
+                                expression="org.springframework.web.bind.annotation.ControllerAdvice"/>
     </context:component-scan>
 
+    <!-- 6. 事务管理器：基于 JDBC 数据源，负责开事务 / 提交 / 回滚 -->
     <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
         <property name="dataSource" ref="dataSource"/>
     </bean>
+
+    <!-- 7. 开启注解事务：让 @Transactional 生效；Service 上加 @Transactional 即套上事务 -->
     <tx:annotation-driven transaction-manager="transactionManager"/>
 
 </beans>

@@ -10,16 +10,28 @@
 
       <!-- 表单示例 -->
       <el-form :model="form" label-width="120px" style="max-width: 600px">
-        <el-form-item label="用户名">
-          <el-input v-model="form.username" placeholder="请输入用户名"/>
+        <el-form-item label="名称">
+          <el-input v-model="form.name" placeholder="请输入名称"/>
         </el-form-item>
 
-        <el-form-item label="密码">
-          <el-input v-model="form.password" type="password" placeholder="请输入密码"/>
+        <el-form-item label="品牌/厂家">
+          <el-input v-model="form.marker" placeholder="请输入品牌/厂家"/>
         </el-form-item>
 
-        <el-form-item label="邮箱">
-          <el-input v-model="form.email" placeholder="请输入邮箱"/>
+        <el-form-item label="价格">
+          <el-input v-model.number="form.price" placeholder="请输入价格"/>
+        </el-form-item>
+
+        <el-form-item label="销量">
+          <el-input v-model.number="form.sales" placeholder="请输入销量"/>
+        </el-form-item>
+
+        <el-form-item label="库存">
+          <el-input v-model.number="form.stock" placeholder="请输入库存"/>
+        </el-form-item>
+
+        <el-form-item label="图片路径">
+          <el-input v-model="form.imgPath" placeholder="请输入图片路径"/>
         </el-form-item>
 
         <el-form-item>
@@ -116,13 +128,17 @@ import {
   Delete,
   UploadFilled
 } from '@element-plus/icons-vue'
-import {getUserList, createUser, updateUser, deleteUser} from '@/api/example'
+import {getUserList, updateUser, deleteUser} from '@/api/example'
+import {addFurn} from '@/api/furn'
 
-// 表单数据
+// 表单数据（字段与 furnMapper.xml 的 insert 对齐）
 const form = reactive({
-  username: '',
-  password: '',
-  email: ''
+  name: '',
+  marker: '',
+  price: 0,
+  sales: 0,
+  stock: 0,
+  imgPath: ''
 })
 
 // 文件上传
@@ -161,19 +177,23 @@ const fetchUserList = async () => {
   }
 }
 
-// 提交表单
+// 提交表单（新增家具）
 const handleSubmit = async () => {
   try {
-    const res = await createUser({
-      username: form.username,
-      password: form.password,
-      email: form.email
+    // 字段与后端 furnMapper.xml 的 insert save 对齐
+    const res = await addFurn({
+      name: form.name,
+      marker: form.marker,
+      price: form.price,
+      sales: form.sales,
+      stock: form.stock,
+      imgPath: form.imgPath
     })
 
-    if (res.code === 200) {
-      ElMessage.success('创建成功')
+    // 后端 addFurn 当前返回 void，这里兼容空响应；后端改为返回 Result 后会走 code===200
+    if (!res || res.code === 200) {
+      ElMessage.success('新增成功')
       handleReset()
-      fetchUserList()
     }
   } catch (error) {
     console.error(error)
@@ -182,9 +202,12 @@ const handleSubmit = async () => {
 
 // 重置表单
 const handleReset = () => {
-  form.username = ''
-  form.password = ''
-  form.email = ''
+  form.name = ''
+  form.marker = ''
+  form.price = 0
+  form.sales = 0
+  form.stock = 0
+  form.imgPath = ''
 }
 
 // 编辑

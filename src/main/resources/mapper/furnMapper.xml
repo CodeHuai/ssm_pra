@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.huai.ssm.mapper.FurnMapper">
+    <insert id="save" parameterType="com.huai.ssm.bean.FurnBean">
+        insert into furn(name, marker, price, sales, stock, img_path)
+        values (#{name}, #{marker}, #{price}, #{sales}, #{stock}, #{imgPath})
+    </insert>
+</mapper>

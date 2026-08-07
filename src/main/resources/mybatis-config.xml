@@ -11,6 +11,6 @@
         </plugin>
     </plugins>
     <mappers>
-<!--        <mapper resource="/" />-->
+        <!--        <mapper resource="mapper/furnMapper.xml"/>-->
     </mappers>
 </configuration>
