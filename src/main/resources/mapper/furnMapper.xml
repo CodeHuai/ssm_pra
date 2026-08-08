@@ -14,7 +14,27 @@
         from furn
     </select>
 
-    <update id="updateFurn">
-        update furn set name=${name}
+    <update id="updateFurn" parameterType="com.huai.ssm.bean.FurnBean">
+        update furn
+        set name=#{name},
+            marker=#{marker},
+            price=#{price},
+            sales=#{sales},
+            stock=#{stock},
+            img_path=#{imgPath}
+        where id = #{id}
     </update>
+
+
+    <select id="getDetailById" resultType="com.huai.ssm.bean.FurnBean" parameterType="int">
+        select *
+        from furn
+        where id = #{id}
+    </select>
+
+    <delete id="removeDataById" parameterType="int">
+        delete
+        from furn
+        where id = #{id}
+    </delete>
 </mapper>

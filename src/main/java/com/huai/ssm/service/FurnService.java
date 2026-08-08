@@ -1,13 +1,22 @@
 package com.huai.ssm.service;
 
 import com.huai.ssm.bean.FurnBean;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+
 public interface FurnService {
-    public void save(FurnBean furnBean);
+    @Transactional
+    void save(FurnBean furnBean);
 
-    public List<FurnBean> getAllFurns();
+    List<FurnBean> getAllFurns();
 
-    public FurnBean updateFurn(FurnBean furnBean);
+    @Transactional
+    int updateFurn(FurnBean furnBean);
+
+    FurnBean getDetailById(int id);
+
+    @Transactional
+    void removeDataById(int id);
 }

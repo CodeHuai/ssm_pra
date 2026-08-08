@@ -24,7 +24,17 @@ public class FurnServiceImpl implements FurnService {
     }
 
     @Override
-    public FurnBean updateFurn(FurnBean furnBean) {
+    public int updateFurn(FurnBean furnBean) {
         return furnMapper.updateFurn(furnBean);
+    }
+
+    @Override
+    public FurnBean getDetailById(int id) {
+        return furnMapper.getDetailById(id);
+    }
+
+    @Override
+    public void removeDataById(int id) {
+        furnMapper.removeDataById(id);
     }
 }

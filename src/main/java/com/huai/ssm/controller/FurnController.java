@@ -41,18 +41,24 @@ public class FurnController {
 
     @PostMapping("/modifyFurn")
     public Msg updateFurn(@RequestBody FurnBean furnBean) {
-        furnService.updateFurn(furnBean);
-        return Msg.success();
+        int index = furnService.updateFurn(furnBean);
+        if (index == 1) {
+            FurnBean furnDetail = furnService.getDetailById(furnBean.getId());
+            return Msg.success().add("detail", furnDetail);
+        } else {
+            return Msg.fail();
+        }
     }
 
-    @GetMapping(value = "/getFurnDetailById", path = "id")
+    @GetMapping("/getFurnDetailById/{id}")
     public Msg getFurnDetail(@PathVariable Integer id) {
-
-        return Msg.success();
+        FurnBean detail = furnService.getDetailById(id);
+        return Msg.success().add("detail", detail);
     }
 
-    @GetMapping(value = "removeFurnById", path = "id")
+    @GetMapping("/removeFurnById/{id}")
     public Msg removeFurnById(@PathVariable Integer id) {
+        furnService.removeDataById(id);
         return Msg.success();
     }
 }

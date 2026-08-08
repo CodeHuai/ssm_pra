@@ -31,3 +31,21 @@ export function getFurnPage(pageNum, pageSize) {
         params: {pageNum, pageSize}
     })
 }
+
+// 修改家具 —— POST /api/modifyFurn
+// 后端: @RequestBody FurnBean（需带 id），返回 data.detail 为更新后的对象
+export function updateFurn(data) {
+    return post('/modifyFurn', data)
+}
+
+// 删除家具 —— GET /api/removeFurnById/{id}
+// 注意：后端是 GET + 路径参数 {id}（不是 DELETE，也不是 query）
+export function deleteFurn(id) {
+    return get(`/removeFurnById/${id}`)
+}
+
+// 查询家具详情 —— GET /api/getFurnDetailById/{id}
+// 返回: { code, msg, data: { detail: FurnBean } }
+export function getFurnDetail(id) {
+    return get(`/getFurnDetailById/${id}`)
+}

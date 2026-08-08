@@ -11,5 +11,9 @@ public interface FurnMapper {
 
     List<FurnBean> findAllFurns();
 
-    FurnBean updateFurn(FurnBean furnBean);
+    int updateFurn(FurnBean furnBean);
+
+    FurnBean getDetailById(int id);
+
+    void removeDataById(int id);
 }
