@@ -8,54 +8,25 @@
         </div>
       </template>
 
-      <!-- 上面的表格：家具列表（调用 /api/getAll，全量） -->
-      <div class="section-title">家具列表 - 全量（共 {{ allFurnList.length }} 条）</div>
-      <el-table :data="allFurnList" style="width: 100%" v-loading="allFurnLoading" stripe>
-        <el-table-column prop="id" label="ID" width="80"/>
-        <el-table-column prop="name" label="名称"/>
-        <el-table-column prop="marker" label="品牌"/>
-        <el-table-column prop="price" label="价格"/>
-        <el-table-column prop="sales" label="销量"/>
-        <el-table-column prop="stock" label="库存"/>
-        <el-table-column prop="imgPath" label="图片路径"/>
-      </el-table>
-
-      <!-- 文件上传示例 -->
-      <el-divider/>
-
-      <el-form>
-        <el-form-item label="文件上传">
-          <el-upload
-              class="upload-demo"
-              :action="uploadUrl"
-              :on-preview="handlePreview"
-              :on-remove="handleRemove"
-              :on-success="handleSuccess"
-              :on-error="handleError"
-              :before-upload="beforeUpload"
-              :on-progress="handleProgress"
-              :file-list="fileList"
-              drag
-          >
-            <el-icon class="el-icon--upload">
-              <UploadFilled/>
-            </el-icon>
-            <div class="el-upload__text">
-              将文件拖到此处，或<em>点击上传</em>
-            </div>
-            <template #tip>
-              <div class="el-upload__tip">
-                只能上传 jpg/png 文件，且不超过 500KB
-              </div>
-            </template>
-          </el-upload>
+      <!-- 搜索条件 -->
+      <el-form :inline="true" :model="searchForm" class="search-form">
+        <el-form-item label="名称">
+          <el-select v-model="searchForm.name" placeholder="请选择名称" clearable filterable style="width: 180px">
+            <el-option v-for="n in nameOptions" :key="n" :label="n" :value="n"/>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="品牌">
+          <el-input v-model="searchForm.marker" placeholder="请输入品牌（模糊）" clearable style="width: 200px"/>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" :icon="Search" @click="handleSearch">搜索</el-button>
+          <el-button :icon="RefreshLeft" @click="handleReset">重置</el-button>
         </el-form-item>
       </el-form>
 
-      <!-- 下面的表格：家具列表（调用 /api/furnPage，分页） -->
-      <el-divider/>
+      <!-- 家具分页表格 -->
       <div class="section-title">
-        <span>家具列表 - 分页（共 {{ furnTotal }} 条）</span>
+        <span>家具列表（共 {{ furnTotal }} 条）</span>
         <el-button type="primary" :icon="Plus" @click="openDialog('add')">新增</el-button>
       </div>
       <el-table :data="furnList" style="width: 100%" v-loading="furnLoading" stripe>
@@ -65,7 +36,19 @@
         <el-table-column prop="price" label="价格"/>
         <el-table-column prop="sales" label="销量"/>
         <el-table-column prop="stock" label="库存"/>
-        <el-table-column prop="imgPath" label="图片路径"/>
+        <el-table-column label="图片" width="100">
+          <template #default="scope">
+            <el-image
+                v-if="scope.row.imgPath"
+                :src="scope.row.imgPath"
+                :preview-src-list="[scope.row.imgPath]"
+                preview-teleported
+                fit="cover"
+                style="width: 50px; height: 50px; border-radius: 4px"
+            />
+            <span v-else class="no-img">无</span>
+          </template>
+        </el-table-column>
         <el-table-column label="操作" width="220" fixed="right">
           <template #default="scope">
             <el-button size="small" @click="openDialog('view', scope.row)">查看</el-button>
@@ -106,8 +89,26 @@
         <el-form-item label="库存">
           <el-input v-model.number="dialogForm.stock" placeholder="请输入库存"/>
         </el-form-item>
-        <el-form-item label="图片路径">
-          <el-input v-model="dialogForm.imgPath" placeholder="请输入图片路径"/>
+        <el-form-item label="图片">
+          <el-upload
+              class="img-uploader"
+              :action="uploadUrl"
+              :show-file-list="false"
+              :on-success="handleImgSuccess"
+              :before-upload="beforeImgUpload"
+              :disabled="isView"
+          >
+            <img v-if="dialogForm.imgPath" :src="dialogForm.imgPath" class="img-preview" alt="家具图片"/>
+            <el-icon v-else class="img-uploader-icon">
+              <Plus/>
+            </el-icon>
+          </el-upload>
+          <el-button
+              v-if="dialogForm.imgPath && !isView"
+              link
+              type="danger"
+              @click="dialogForm.imgPath = ''"
+          >移除图片</el-button>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -125,30 +126,45 @@ import {ref, reactive, computed, onMounted} from 'vue'
 import {ElMessage, ElMessageBox} from 'element-plus'
 import {
   Refresh,
-  UploadFilled,
-  Plus
+  Plus,
+  Search,
+  RefreshLeft
 } from '@element-plus/icons-vue'
 import {addFurn, getAllFurn, getFurnPage, updateFurn, deleteFurn, getFurnDetail} from '@/api/furn'
 
-// 文件上传
+// 图片上传地址（弹框里家具图片用）
 const uploadUrl = ref(import.meta.env.VITE_API_BASE_URL + '/file/upload')
-const fileList = ref([])
 
-// 家具列表 - 全量（/api/getAll）
-const allFurnList = ref([])
-const allFurnLoading = ref(false)
-const fetchAllFurn = async () => {
-  allFurnLoading.value = true
+// 搜索条件
+const searchForm = reactive({
+  name: '',
+  marker: ''
+})
+
+// 名称下拉选项（来自 /api/getAll 的 list，按 name 去重）
+const nameOptions = ref([])
+const fetchNameOptions = async () => {
   try {
     const res = await getAllFurn()
     if (res.code === 200) {
-      allFurnList.value = res.data?.list || []
+      const list = res.data?.list || []
+      nameOptions.value = [...new Set(list.map(f => f.name).filter(Boolean))]
     }
   } catch (error) {
     console.error(error)
-  } finally {
-    allFurnLoading.value = false
   }
+}
+
+// 搜索 / 重置
+const handleSearch = () => {
+  furnPageNum.value = 1 // 搜索时回到第一页
+  fetchFurnList()
+}
+const handleReset = () => {
+  searchForm.name = ''
+  searchForm.marker = ''
+  furnPageNum.value = 1
+  fetchFurnList()
 }
 
 // 家具列表 - 分页（/api/furnPage）
@@ -161,7 +177,12 @@ const furnPageSize = ref(5)
 const fetchFurnList = async () => {
   furnLoading.value = true
   try {
-    const res = await getFurnPage(furnPageNum.value, furnPageSize.value)
+    const res = await getFurnPage({
+      pageNum: furnPageNum.value,
+      pageSize: furnPageSize.value,
+      name: searchForm.name,
+      marker: searchForm.marker
+    })
     if (res.code === 200) {
       furnList.value = res.data?.list || []
       furnTotal.value = res.data?.total || 0
@@ -284,53 +305,41 @@ const handleDelete = (row) => {
   })
 }
 
-// 刷新数据（全量 + 分页两个表）
-const refreshData = () => {
-  fetchAllFurn()
-  fetchFurnList()
+// 图片上传成功：后端返回 { code, msg, data:{ url } }，把 url 存进 imgPath
+// 注意：el-upload 不走 axios 拦截器，response 是原始响应体，要自己判 code
+const handleImgSuccess = (response) => {
+  if (response.code === 200) {
+    dialogForm.imgPath = response.data.url
+    ElMessage.success('图片上传成功')
+  } else {
+    ElMessage.error(response.msg || '图片上传失败')
+  }
 }
 
-// 文件上传相关
-const handlePreview = (file) => {
-  ElMessage.info(`预览文件：${file.name}`)
-}
-
-const handleRemove = (file, uploadFiles) => {
-  ElMessage.success(`已移除文件：${file.name}`)
-}
-
-const handleSuccess = (response, uploadFile, uploadFiles) => {
-  ElMessage.success('文件上传成功')
-  fileList.value = uploadFiles
-}
-
-const handleError = (error, uploadFile, uploadFiles) => {
-  ElMessage.error('文件上传失败')
-  console.error(error)
-}
-
-const beforeUpload = (rawFile) => {
-  const isJPG = rawFile.type === 'image/jpeg' || rawFile.type === 'image/png'
-  const isLt500K = rawFile.size / 1024 < 500
-
-  if (!isJPG) {
-    ElMessage.error('只能上传 JPG/PNG 格式的图片')
+// 图片上传前校验：类型 + 大小
+const beforeImgUpload = (rawFile) => {
+  const isImg = rawFile.type.startsWith('image/')
+  const isLt2M = rawFile.size / 1024 / 1024 < 2
+  if (!isImg) {
+    ElMessage.error('只能上传图片文件')
     return false
   }
-  if (!isLt500K) {
-    ElMessage.error('图片大小不能超过 500KB')
+  if (!isLt2M) {
+    ElMessage.error('图片大小不能超过 2MB')
     return false
   }
   return true
 }
 
-const handleProgress = (evt, uploadFile, uploadFiles) => {
-  console.log('上传进度：', evt.percent)
+// 刷新数据（分页表 + 名称下拉选项）
+const refreshData = () => {
+  fetchFurnList()
+  fetchNameOptions()
 }
 
 // 初始化
 onMounted(() => {
-  fetchAllFurn()
+  fetchNameOptions()
   fetchFurnList()
 })
 </script>
@@ -355,12 +364,42 @@ onMounted(() => {
   align-items: center;
 }
 
+.search-form :deep(.el-form-item) {
+  margin-bottom: 12px;
+}
+
 .box-card {
   min-height: calc(100vh - 40px);
 }
 
-.upload-demo {
-  width: 100%;
+/* 图片上传（弹框内） */
+.img-uploader :deep(.el-upload) {
+  border: 1px dashed var(--el-border-color);
+  border-radius: 6px;
+  cursor: pointer;
+  overflow: hidden;
+  transition: var(--el-transition-duration-fast);
+}
+.img-uploader :deep(.el-upload):hover {
+  border-color: var(--el-color-primary);
+}
+.img-uploader-icon {
+  font-size: 28px;
+  color: #8c939d;
+  width: 120px;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.img-preview {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  display: block;
+}
+.no-img {
+  color: #999;
 }
 
 :deep(.el-pagination) {

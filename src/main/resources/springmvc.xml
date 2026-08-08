@@ -23,4 +23,28 @@
                      allow-credentials="true"/>
     </mvc:cors>
 
+    <!--
+       ① multipart 解析器：Spring 接收上传文件的"桥"
+       web.xml 让 Tomcat 会解析 multipart；这里让 Spring 把 Tomcat 解析好的结果
+       转成 Controller 里用的 MultipartFile。没这个 bean，@RequestParam MultipartFile 拿到的是 null。
+       ⚠️ id 必须正好叫 multipartResolver——DispatcherServlet 默认按这个名字在【子容器(本文件)】找，
+          写错一个字母、或放到父容器 applicationContext.xml 里，上传都不生效。
+     -->
+    <bean id="multipartResolver"
+          class="org.springframework.web.multipart.support.StandardServletMultipartResolver"/>
+
+    <!--
+      ② 加载上传配置(存盘目录、URL前缀)。占位符 ${} 是按容器隔离的：
+         谁要用 ${upload.dir}，就在谁那里加载；下面 ③ 要用，所以这里加载。
+    -->
+    <context:property-placeholder location="classpath:upload.properties"/>
+
+    <!--
+      ③ 静态资源映射：让 /upload/xxx.jpg 这个 URL 能访问到磁盘 ${upload.dir} 里的图片。
+         不配这个，图传上去了前端 <img> 也 404。
+         file: 前缀 = 用绝对磁盘路径；结尾斜杠由 upload.properties 里的值保证。
+    -->
+    <mvc:resources mapping="/upload/**" location="file:${upload.dir}" />
+
+
 </beans>

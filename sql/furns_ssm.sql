@@ -11,7 +11,7 @@
  Target Server Version : 50733
  File Encoding         : 65001
 
- Date: 07/08/2026 16:00:39
+ Date: 08/08/2026 10:16:50
 */
 
 SET NAMES utf8mb4;
@@ -35,9 +35,8 @@ CREATE TABLE `furn`  (
 -- ----------------------------
 -- Records of furn
 -- ----------------------------
-INSERT INTO `furn` VALUES (1, '简约风格小椅子', '熊猫家具', 180.00, 666, 7, NULL);
+INSERT INTO `furn` VALUES (1, '简约风格小椅子小号', '熊猫家具', 180.00, 666, 7, NULL);
 INSERT INTO `furn` VALUES (2, '北欧风格小椅子', '蚂蚁家具', 180.00, 666, 7, NULL);
 INSERT INTO `furn` VALUES (3, '小板凳', '顾家家居', 100.00, 10, 200, '');
-INSERT INTO `furn` VALUES (5, '丫丫', '丫丫家具', 120.00, 20, 90, '');
 
 SET FOREIGN_KEY_CHECKS = 1;

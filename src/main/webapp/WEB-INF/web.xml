@@ -25,6 +25,29 @@
             <param-value>classpath:springmvc.xml</param-value>
         </init-param>
         <load-on-startup>1</load-on-startup>
+        <!--
+          multipart-config：Servlet 3.0+ 规范定义的上传配置
+          由 Servlet 容器(Tomcat)在 Spring 启动【之前】解析并强制执行，
+          是上传大小限制的硬底线、防 DoS 的最后一道关。
+          注意：web.xml 由 Tomcat 解析，比 Spring 还早，所以这里【不能用 ${xxx} 占位符】
+                （那时 Spring 还没启动，没人帮你替换）——只能写死字面值，
+                这是 Servlet 3.0 + web.xml 方案的固有限制。
+        -->
+        <multipart-config>
+            <!-- 单个文件最大 5MB(5*1024*1024)。超了 Tomcat 直接拒绝，根本进不了 Spring -->
+            <max-file-size>5242880</max-file-size>
+            <!-- 整个 multipart 请求最大 10MB。一次传多个文件时由它兜底 -->
+            <max-request-size>10485760</max-request-size>
+            <!-- 内存/磁盘分界线：1MB。小于它的留内存(快)，大于的才落临时盘(省内存) -->
+            <file-size-threshold>1048576</file-size-threshold>
+            <!--
+              这里【故意省略了 <location>】：它原本是上传过程的临时暂存目录，
+              不是文件最终保存位置。最终保存目录由 Controller 的 transferTo() 决定
+              （走 upload.properties，可外部化）。
+              企业实践一般省略 <location>，让 Tomcat 用自带临时目录(work 目录)，
+              既免写死，又由容器自动管理/清理。
+            -->
+        </multipart-config>
     </servlet>
     <servlet-mapping>
         <servlet-name>dispatcherServlet</servlet-name>

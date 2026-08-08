@@ -21,14 +21,17 @@ export function getAllFurn() {
 }
 
 // 分页查询家具 —— POST /api/furnPage
-// ⚠️ 后端用 @RequestParam 接收，参数必须放在 url query（params），
-//    不能放进请求体（data），否则后端拿不到会报错。
+// ⚠️ 后端用 @RequestParam 接收，参数走 url query（params），不能放请求体。
+// name / marker 为搜索条件（可选，为空则不带这个参数）。
 // 返回: { code, msg, data: { list, total, pageNum, pageSize, pages } }
-export function getFurnPage(pageNum, pageSize) {
+export function getFurnPage({pageNum, pageSize, name, marker} = {}) {
+    const params = {pageNum, pageSize}
+    if (name) params.name = name
+    if (marker) params.marker = marker
     return request({
         url: '/furnPage',
         method: 'post',
-        params: {pageNum, pageSize}
+        params
     })
 }
 
